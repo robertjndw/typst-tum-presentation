@@ -1,0 +1,26 @@
+name: Build typst
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build_release_example:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install fonts
+        run: |
+          echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
+          sudo apt install -y --no-install-recommends ttf-mscorefonts-installer
+          sudo fc-cache -fv
+          fc-match Arial
+      
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
+          lfs: true
+  
+      - uses: typst-community/setup-typst@v3
+      - run: typst fonts
+      - run: typst compile example.typ example.pdf

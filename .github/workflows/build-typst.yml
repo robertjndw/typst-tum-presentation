@@ -21,6 +21,6 @@ jobs:
           fetch-depth: '0'
           lfs: true
   
-      - uses: typst-community/setup-typst@v3
+      - uses: typst-community/setup-typst@v4
       - run: typst fonts
       - run: typst compile example.typ example.pdf

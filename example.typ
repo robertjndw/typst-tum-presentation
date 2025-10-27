@@ -13,10 +13,10 @@
 #title-content-slide(title: "Section 1", [ 
   #text("This is the first section of the presentation.")
 
-  #pause
+  #show: later
   #text("It is a very important section.")
 
-  #pause
+  #show: later
   #text("It is the best section.")
 ])
 

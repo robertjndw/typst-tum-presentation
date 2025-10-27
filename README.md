@@ -52,10 +52,10 @@ For a standard title-content slide you can use:
 ```
 
 #### 4. Adding Dynamic
-You can step-by-step reveal content on slides by using the `#pause` function. For example, to reveal a list of items one by one, you can use the following code:
+You can step-by-step reveal content on slides by using the `#show: later` function. For example, to reveal a list of items one by one, you can use the following code:
 ```
 #text("This is shown first.")
-#pause
+#show: later
 #text("This is hidden first.")
 ```
 

@@ -1,4 +1,4 @@
-#import "@preview/polylux:0.3.1": *
+#import "@preview/polylux:0.4.0": *
 #import "colors.typ": *
 
 // State definitions
@@ -66,7 +66,7 @@
 }
 
 #let title-slide(flags: false) = {
-  polylux-slide({
+  slide({
     if flags {
       // TUM Background
       place(center, 
@@ -83,20 +83,20 @@
     }
     set text(white) if flags
     // Presentation information
-    pad(
+    context pad(
       x: 2cm,
       y: 3cm,
       {
-        text(title-state.display(), size: 25pt)
+        text(title-state.get(), size: 25pt)
         v(1cm)
         stack(
           dir: ttb,
           spacing: 0.5cm,
-          author-state.display(),
-          university-state.display(),
-          school-state.display(),
-          chair-state.display(),
-          location-state.display() + ", " + date-state.display(),
+          author-state.get(),
+          university-state.get(),
+          school-state.get(),
+          chair-state.get(),
+          [#location-state.get(), #date-state.get()],
         )
       }
     )
@@ -108,12 +108,12 @@
   let footer = {
     set align(left + bottom)
     set text(size: 11pt)
-    pad(
+    context pad(
       bottom: 0.4cm,
       {
-        footer-state.display()
+        footer-state.get()
         h(1fr)
-        logic.logical-slide.display()
+        toolbox.slide-number
       }
     )
   }
@@ -123,7 +123,7 @@
     footer: footer,
   )
 
-  polylux-slide({
+  slide({
     body
   })
 }

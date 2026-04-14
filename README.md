@@ -48,7 +48,7 @@ Once the metadata is set, you can start creating your slides. The template provi
 ```
 For a standard title-content slide you can use:
 ```
-#title-content-slide(title: "Section 1", [ #text("This is the first section of the presentation.")] )
+#title-content-slide(title: "Section 1")[#text("This is the first section of the presentation.")]
 ```
 
 #### 4. Adding Dynamic

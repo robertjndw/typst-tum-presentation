@@ -10,7 +10,7 @@
 
 #title-slide(flags: true)
 
-#title-content-slide(title: "Section 1", [ 
+#title-content-slide(title: "Section 1")[ 
   #text("This is the first section of the presentation.")
 
   #show: later
@@ -18,8 +18,10 @@
 
   #show: later
   #text("It is the best section.")
-])
+]
 
 #title-image-slide(title: "Section 2", image_path: "/resources/TUM-turm.jpg")
 
-#title-content-slide(title: "Section 3", lorem(100))
+#title-content-slide(title: "Section 3")[
+  #lorem(100)
+]

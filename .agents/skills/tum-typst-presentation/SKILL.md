@@ -1,23 +1,26 @@
 ---
 name: tum-typst-presentation
 description: >
-  Creates, edits, and converts presentations using the TUM (Technical University of Munich)
-  Typst template in this repository. Use this skill whenever the user wants to write a new
-  TUM presentation, add or edit slides, structure content for a talk, or convert an existing
-  PowerPoint (PPTX) file into Typst format. Trigger even for casual requests like "make slides
-  about X", "add a slide on Y", "convert my PPTX to Typst", or "how do I animate this".
+  Creates, edits, and converts presentations built on the TUM (Technical University of
+  Munich) Polylux/Typst template in this repository - theme.typ, title-slide,
+  title-content-slide, title-image-slide, empty-slide. Use this skill whenever the user
+  wants to write a new TUM presentation, add or edit slides, restructure a talk, fix a
+  slide that renders wrong, or convert an existing PowerPoint (PPTX) deck into Typst.
+  Trigger even for casual requests like "make slides about X", "add a slide on Y",
+  "turn this pptx into typst", "why is my slide duplicated", or "how do I animate this".
 ---
 
 # TUM Typst Presentation Skill
 
-This skill helps you work with the TUM Polylux Typst template in this repo. The template
-produces TUM-branded 16:9 presentations with the official TUM blue (`#0065BD`) color scheme.
+This repo is a Polylux template producing TUM-branded 16:9 slides. `theme.typ` defines the
+slide functions, `colors.typ` the corporate palette, `resources/` the logos and photos.
 
-## Template setup
+The single most useful thing you can do here is **compile and look at the result**. Typst
+silently reflows overfull slides onto a second page, so a deck can compile cleanly and
+still be wrong. See [Verifying your work](#verifying-your-work) - do it before you report
+back.
 
-Every presentation file must start with this **exact import** — do not use relative path
-traversal (e.g. `../../theme.typ`). The file must be compiled from the repo root where
-`theme.typ` lives, and the import must be:
+## Setting up a presentation
 
 ```typ
 #import "theme.typ": *
@@ -26,68 +29,105 @@ traversal (e.g. `../../theme.typ`). The file must be compiled from the repo root
   authors: ("Your Name",),
   title: "Presentation Title",
   footer-infos: ("Optional extra footer text",),
-  school: "TUM School of ...",        // optional
-  chair: "Lehrstuhl für ...",         // optional
-  lang: "en",                          // or "de"
-  date: datetime(year: 2025, month: 6, day: 10),  // optional, defaults to today
+  school: "TUM School of ...",                     // optional
+  chair: "Lehrstuhl für ...",                      // optional
+  lang: "en",                                      // or "de"
+  date: datetime(year: 2025, month: 6, day: 10),   // optional, defaults to today
 )
 ```
 
-If the template is in a subdirectory (e.g., `theme/`), adjust the import path:
-`#import "theme/theme.typ": *`
+**About the import path.** `theme.typ` loads its logos with root-absolute paths
+(`/resources/TUM-logo.svg`), and Typst resolves those against the *project root*, which
+defaults to the directory of the file you compile. So the import path and the compile
+command have to agree:
 
----
+| Layout | Import | Compile from |
+|---|---|---|
+| Deck next to `theme.typ` (this repo) | `#import "theme.typ": *` | that directory |
+| Theme copied into `theme/`, `resources/` at top level | `#import "/theme/theme.typ": *` | project root |
+| Deck in a subfolder, theme above it | `#import "/theme.typ": *` | `typst compile --root . slides/deck.typ` |
+
+A bare `../theme.typ` fails with *"would escape the project root"* - Typst will not read
+outside the root. Pass `--root` rather than rewriting the theme's paths.
 
 ## Slide types
 
 ### `#title-slide()`
-The opening slide. Shows the title, authors, university, school, chair, location, and date.
-
-- Default: TUM tower watermark on the right
-- With flags: `#title-slide(flags: true)` — full TUM flags photo background with white text
-
-Use the flags variant for high-impact openers; the default for more formal contexts.
+Opening slide: title, authors, university, school, chair, location, date. Default has the
+TUM tower watermark; `#title-slide(flags: true)` uses the full-bleed TUM flags photo with
+white text. Use the flags variant once, for impact - the default reads as more formal.
 
 ### `#title-content-slide(title: "...")[body]`
-The standard workhorse slide. Title in TUM blue at the top, freeform body content below.
+The workhorse. Takes any content in the body: text, lists, tables, code, images, grids.
+
+`title:` accepts content, not just a string, so you can style it. **Titles render black by
+default** - if the user wants TUM blue, do it explicitly:
 
 ```typ
-#title-content-slide(title: "Key Findings")[
-  - Result one: explanation
-  - Result two: explanation
-
-  #show: later
-  - Result three (revealed on click)
+#title-content-slide(title: text(TUM_primary_blue)[Key Findings])[
+  - Result one
+  - Result two
 ]
 ```
 
-Use for: text, bullet lists, code blocks, tables, diagrams, most content.
+### `#title-image-slide(title: "...", image_path: "/resources/foo.jpg")`
+Convenience wrapper for a single centered image. Two sharp edges worth knowing:
 
-### `#title-image-slide(title: "...", image_path: "path/to/image.jpg")`
-Full-width image centered below the title. Use this whenever a slide's main content is
-visual — architecture diagrams, screenshots, charts, photos, or any placeholder that will
-eventually become an image. **Do not** put an image or chart inside a `#title-content-slide`
-body; use this slide type instead.
-
-When the real image doesn't exist yet, use a placeholder path and leave a comment:
-```typ
-// TODO: replace with actual chart path
-#title-image-slide(title: "Experimental Results", image_path: "/resources/results-chart.png")
-```
-
-If the image truly doesn't exist and you want a compiled placeholder, use `#title-content-slide`
-with a visually distinct `#rect` — but switch it to `#title-image-slide` the moment a real file
-is available.
+- It takes **no body** and gives you **no control over image size**. The image renders at
+  its natural size (pixels ÷ DPI), shrunk to the body width but never to the body height,
+  so a tall or low-DPI image overflows onto a second page. When in doubt use a content
+  slide with an explicit `height:` (see [Layout recipes](#layout-recipes)).
+- `image_path` has no default that works - omitting it fails with *"expected path, string,
+  or bytes, found none"*. Only emit this slide once the file actually exists.
 
 ### `#empty-slide[body]`
-Bare slide with footer but no title. Useful for full-bleed layouts or custom arrangements.
+Footer and page number, no title. For full-bleed layouts, section statements, or anything
+you want to arrange yourself.
 
----
+## Layout recipes
 
-## Animations (step-by-step reveals)
+The slide body is about **31.9 cm wide and 10.5 cm tall**. Percentage heights do not help
+here - the body block has automatic height, so `height: 70%` resolves against nothing
+useful. Size images in absolute units and stay under the budget.
 
-Use `#show: later` inside a slide body to reveal content progressively. Each `later` creates
-a new "click" in the PDF. The content before is shown first; after each click more appears.
+**Image with a caption or a line of text** - cap at `9cm` to leave room for the text:
+
+```typ
+#title-content-slide(title: "Throughput")[
+  #align(center, image("/resources/chart.png", height: 9cm))
+  Measured on 4x A100, batch size 32.
+]
+```
+
+**Image beside text** - the fixed box means it never overflows in either direction,
+whatever shape the image is:
+
+```typ
+#title-content-slide(title: "Architecture")[
+  #grid(columns: (1fr, 1fr), gutter: 1cm, align: horizon,
+    [
+      - Ingest layer batches requests
+      - Scheduler assigns GPUs
+    ],
+    image("/resources/arch.png", width: 100%, height: 10cm, fit: "contain"),
+  )
+]
+```
+
+**Image alone on a content slide** - `height: 10cm` is the practical ceiling.
+
+**A statement slide** for a section break or closing line:
+
+```typ
+#empty-slide[
+  #align(center + horizon, text(size: 40pt, TUM_primary_blue)[40% faster, same accuracy])
+]
+```
+
+## Step-by-step reveals
+
+`#show: later` reveals everything after it on the next click. Each `later` adds one PDF
+page, so a slide with two `later`s becomes three pages - expected, not a bug.
 
 ```typ
 #title-content-slide(title: "Three Steps")[
@@ -101,87 +141,85 @@ a new "click" in the PDF. The content before is shown first; after each click mo
 ]
 ```
 
-Polylux generates one PDF page per reveal step — this is normal. Compile with `typst compile`
-and view in a PDF viewer that supports presentation mode.
+For `uncover`, `only`, and other Polylux primitives see the
+[Polylux book](https://polylux.dev/book/polylux.html).
 
----
+## Writing good slides
 
-## Content guidance
+Give each slide one idea. If a slide needs more than ~6 bullets, split it. Make titles
+carry the message - "Results show 40% speedup" beats "Results", because the audience reads
+the title first and often only the title.
 
-**Structure your slides around one idea each.** If a slide needs more than ~6 bullet points,
-split it. The title should tell the audience what to take away — "Results show 40% speedup"
-is better than "Results".
+Keep bodies to phrases rather than sentences; the slides support the talk, they are not a
+transcript. And vary the rhythm - several text slides in a row lose the room, so break
+them up with an image slide, a reveal, or a statement slide.
 
-**Mix slide types.** Don't use only title-content slides. After several text slides, break
-the rhythm with a title-image slide or an animated reveal. Use the flags title slide only
-once (at the start or a major section break).
-
-**Keep body text concise.** Slides support the talk; they're not a transcript. Aim for
-phrases, not full sentences.
-
----
-
-## Compiling
+## Verifying your work
 
 ```sh
-typst compile presentation.typ          # produces presentation.pdf
-typst watch presentation.typ            # live-recompile on save
+typst compile deck.typ                 # produces deck.pdf
+typst watch deck.typ                   # live reload while iterating
 ```
 
-For the example file in this repo: `typst compile example.typ`
-
----
-
-## Converting PPTX to Typst
-
-When the user provides a `.pptx` file, use the conversion script to extract content and
-map it to Typst slide types.
-
-### Step 1 — Extract PPTX content
-
-```bash
-python3 .agents/skills/tum-typst-presentation/scripts/pptx_to_typst.py input.pptx
-```
-
-This prints a Typst file draft to stdout and a slide summary to stderr. Redirect:
-
-```bash
-python3 .agents/skills/tum-typst-presentation/scripts/pptx_to_typst.py input.pptx > draft.typ
-```
-
-### Step 2 — Review and refine the draft
-
-The script makes reasonable guesses about slide types, but you should:
-
-- Check that the title slide metadata (author, date) is correct
-- Review every `title-content-slide` body — PPTX body text is often verbose and should
-  be condensed for Typst
-- If a slide's content is mainly one image, switch it to `title-image-slide`
-- Add `#show: later` to any slides that benefit from step-by-step reveals
-- Remove or merge slides that don't translate meaningfully to the TUM layout
-
-### Step 3 — Compile and check
+Compiling is necessary but not sufficient - an overfull slide produces a *silently
+duplicated* page rather than an error. Render the pages and actually look at them:
 
 ```sh
-typst compile draft.typ
+typst compile deck.typ page-{n}.png --format png --ppi 60
 ```
 
-Fix any compilation errors (usually missing image paths or unsupported characters) before
-delivering the result to the user.
+Then read the PNGs. You are checking for: a page whose content area is empty or whose
+title is missing (that is the overflow half of the previous slide), images running past
+the footer, and text that has wrapped badly. Count the pages too - they should equal the
+number of slides plus one extra per `#show: later`.
 
-### Slide type mapping heuristic
+Fix overflow by lowering the image `height:`, trimming body text, or splitting the slide.
 
-| PPTX slide                                 | Typst slide type          |
-|--------------------------------------------|---------------------------|
-| First/cover slide                          | `#title-slide()`          |
-| Slide with only a title + large image      | `#title-image-slide`      |
-| Section divider (title only, no body)      | `#title-slide()` or `#title-content-slide` with empty body |
-| Standard title + bullets/text              | `#title-content-slide`    |
-| Complex custom layout                      | `#empty-slide` + manual layout |
+## Troubleshooting
 
----
+| Symptom | Cause and fix |
+|---|---|
+| `file not found (searched at .../theme.typ)` | Compiling from the wrong directory. Compile where `theme.typ` lives, or use a root-absolute import plus `--root`. |
+| `path "../theme.typ" would escape the project root` | Typst will not read above the root. Add `--root <project-dir>`. |
+| `expected path, string, or bytes, found none` | `#title-image-slide` called without `image_path`. |
+| A slide appears twice, second copy blank or headerless | Content overflow, not a duplicate. Reduce image height or split the slide. |
+| Text renders in a serif fallback; `typst fonts` lacks Arial | The theme sets `font: "Arial"`. On Linux install `ttf-mscorefonts-installer` (this is what `.github/workflows/` does) or change the font in `theme.typ`. |
+| Image missing though the file exists | Image paths are root-absolute (`/resources/...`), not relative to the `.typ` file. |
+
+## Converting a PPTX deck
+
+`scripts/pptx_to_typst.py` extracts titles, nested bullets, tables, speaker notes **and the
+embedded images**, then emits a draft that compiles as-is. It needs `python-pptx`
+(`pip install python-pptx`).
+
+Run it from the Typst project root so the extracted images land where the deck expects
+them:
+
+```bash
+python3 .agents/skills/tum-typst-presentation/scripts/pptx_to_typst.py deck.pptx -o draft.typ
+```
+
+Images go to `resources/<deck-name>/` and are referenced as `/resources/<deck-name>/...`;
+override with `--assets-dir`. Use `--theme-import "/theme/theme.typ"` if your theme is not
+next to the deck, and `--no-notes` to drop speaker notes. A slide-by-slide summary of what
+was detected goes to stderr.
+
+The script picks the slide type from the content it finds - cover, section divider, image,
+image-beside-text, or plain content - and sizes images so nothing overflows. What it
+cannot do is judge meaning, so the draft is a starting point. Work through it and:
+
+- Check the `// REVIEW:` comments; each marks something the script could not place, such
+  as a second image on a slide.
+- Confirm the author, title, school, and chair in the `tum-theme` block.
+- Condense the bodies. PowerPoint bullets are usually full sentences and read as walls of
+  text at 14pt; the `// note:` comments carry the speaker notes, which often say what the
+  slide was actually for.
+- Merge or drop slides that only existed to work around PowerPoint's layout.
+- Add `#show: later` where a build would help the narration.
+
+Then compile and inspect the pages as described above before handing it back.
 
 ## Reference
 
-See `references/theme-api.md` for the full `tum-theme` parameter list and all available
-colors from `colors.typ`.
+`references/theme-api.md` - full `tum-theme` parameter list, the color palette from
+`colors.typ`, and the measured page geometry.

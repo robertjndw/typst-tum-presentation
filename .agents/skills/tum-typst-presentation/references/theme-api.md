@@ -23,7 +23,7 @@ Note `authors` must be a Typst array - a single author needs the trailing comma:
 |---|---|---|
 | `title-slide(flags: false)` | no | `flags: true` swaps the tower watermark for the full-bleed flags photo and white text. |
 | `title-content-slide(title: "Title", body)` | yes | `title` accepts content, so `text(TUM_primary_blue)[...]` works. Renders black by default. |
-| `title-image-slide(title: "Title", image_path: none)` | no | Centers `image(image_path)` with no size control. `image_path` is effectively required - omitting it errors with *expected path, string, or bytes, found none*, because the internal guard tests `image` (the builtin) instead of `image_path`. |
+| `title-image-slide(title: "Title", image_path: none)` | no | Centers `image(image_path)` with no size control. Omitting `image_path` gives a title-only slide. A path to a missing file is a hard error. |
 | `empty-slide(body)` | yes | Footer and slide number only. The other two build on this. |
 
 ## Page geometry

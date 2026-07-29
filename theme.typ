@@ -140,7 +140,7 @@
 #let title-image-slide(title: "Title", image_path: none) = {
   // Reuse empty-slide with predefined layout
   title-content-slide(title: title, {
-      if image != none {
+      if image_path != none {
         align(center, image(image_path))
       }
     }

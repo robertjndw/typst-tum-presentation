@@ -77,8 +77,9 @@ Convenience wrapper for a single centered image. Two sharp edges worth knowing:
   its natural size (pixels ÷ DPI), shrunk to the body width but never to the body height,
   so a tall or low-DPI image overflows onto a second page. When in doubt use a content
   slide with an explicit `height:` (see [Layout recipes](#layout-recipes)).
-- `image_path` has no default that works - omitting it fails with *"expected path, string,
-  or bytes, found none"*. Only emit this slide once the file actually exists.
+- Omitting `image_path` renders a title-only slide, which is a useful placeholder. But a
+  path that points at a missing file is a hard error (*"file not found"*), so only write
+  the path once the file is actually there.
 
 ### `#empty-slide[body]`
 Footer and page number, no title. For full-bleed layouts, section statements, or anything
@@ -181,7 +182,7 @@ Fix overflow by lowering the image `height:`, trimming body text, or splitting t
 |---|---|
 | `file not found (searched at .../theme.typ)` | Compiling from the wrong directory. Compile where `theme.typ` lives, or use a root-absolute import plus `--root`. |
 | `path "../theme.typ" would escape the project root` | Typst will not read above the root. Add `--root <project-dir>`. |
-| `expected path, string, or bytes, found none` | `#title-image-slide` called without `image_path`. |
+| `expected path, string, or bytes, found none` | An older `theme.typ` whose `title-image-slide` guard reads `if image != none` instead of `if image_path != none`. Pass an `image_path`, or apply that one-word fix. |
 | A slide appears twice, second copy blank or headerless | Content overflow, not a duplicate. Reduce image height or split the slide. |
 | Text renders in a serif fallback; `typst fonts` lacks Arial | The theme sets `font: "Arial"`. On Linux install `ttf-mscorefonts-installer` (this is what `.github/workflows/` does) or change the font in `theme.typ`. |
 | Image missing though the file exists | Image paths are root-absolute (`/resources/...`), not relative to the `.typ` file. |

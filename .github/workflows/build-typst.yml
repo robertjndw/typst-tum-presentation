@@ -27,7 +27,7 @@ jobs:
       - run: typst compile example.typ example.pdf
 
       - name: Upload example
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: example
           path: example.pdf

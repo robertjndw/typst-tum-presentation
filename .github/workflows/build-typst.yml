@@ -17,8 +17,6 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v7
-        with:
-          lfs: true
 
       - uses: typst-community/setup-typst@v5
         with:

@@ -1,0 +1,16 @@
+[package]
+name = "tum-presentation"
+version = "0.1.0"
+entrypoint = "theme.typ"
+authors = ["Robert Jandow <robert@jandow.de>"]
+license = "MIT"
+description = "Polylux slides in the TUM corporate design."
+repository = "https://github.com/robertjndw/typst-tum-presentation"
+categories = ["presentation"]
+keywords = ["TUM", "slides", "polylux", "university"]
+exclude = [".agents", ".github", "example.typ"]
+
+[template]
+path = "template"
+entrypoint = "main.typ"
+thumbnail = "thumbnail.png"

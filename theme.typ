@@ -1,148 +1,129 @@
-#import "@preview/polylux:0.4.0": *
-#import "colors.typ": *
+#import "@preview/polylux:0.4.0": later, slide, toolbox
+#import "colors.typ": tum-colors
 
-// State definitions
-#let title-state = state("title-state", none)
-#let date-state = state("date-state", none)
-#let location-state = state("location-state", none)
-#let author-state = state("author-state", none)
-
-#let university-state = state("university-state", none)
-#let school-state = state("school-state", none)
-#let chair-state = state("chair-state", none)
-
-#let footer-state = state("footer-state", none)
-
-// Dictionary for translations
-#let university-name = (en: "Technical University Munich", de: "Technische Universität München")
-#let default-location = (en: "Munich", de: "München")
+// Set by tum-theme, read back by the slide functions.
+#let tum-meta = state("tum-meta", (:))
 
 #let tum-theme(
   aspect-ratio: "16-9",
-  lang: "en", 
+  lang: "en",
+  font: "Arial",
   title: "Title of the TUM presentation",
   location: none,
-  date: datetime.today(),
+  date: auto,
   authors: (),
-  school: "TUM School of Musterverfahren",
-  chair: "Lehrstuhl für Mustertechnik",
+  school: none,
+  chair: none,
   footer-infos: (),
-  body
+  body,
 ) = {
-  set document(
-    title: title,
-    author: authors,
-    date: datetime.today()
-  )
+  assert(type(authors) == array, message: "authors must be an array, e.g. (\"Max Mustermann\",)")
+  assert(type(footer-infos) == array, message: "footer-infos must be an array")
+
+  let university-name = (en: "Technical University Munich", de: "Technische Universität München")
+  let default-location = (en: "Munich", de: "München")
+  let date = if date == auto { datetime.today() } else { date }
+
+  set document(title: title, author: authors, date: date)
   set page(
     paper: "presentation-" + aspect-ratio,
     margin: 0em,
-    header: none,
-    footer: none,
-    background: place(top + right,
-        pad(1cm, image("/resources/TUM-logo.svg", height: 1cm))
-      )
+    background: place(
+      top + right,
+      pad(1cm, image("resources/TUM-logo.svg", height: 1cm, alt: "TUM logo")),
+    ),
   )
 
-  set text(lang: lang, font: "Arial", size: 14pt)
-  set block(spacing: 1em )
+  set text(lang: lang, font: font, size: 14pt)
+  set block(spacing: 1em)
 
-  university-state.update(university-name.at(lang))
-  if location == none {
-    location-state.update(default-location.at(lang))
-  } else {
-    location-state.update(location)
-  }
-  title-state.update(title)
-  date-state.update(date.display("[day]. [month repr:long] [year]"))
-  author-state.update(authors.join(", "))
-  school-state.update(school)
-  chair-state.update(chair)
+  // Titles are real headings so the PDF gets bookmarks. Polylux already
+  // un-outlines the copies on `later` subslides.
+  show heading.where(level: 1): set text(size: 25pt, weight: "regular")
+  show heading.where(level: 1): set block(above: 0pt, below: 0.8cm)
 
-  let complete_footer = authors + footer-infos
-  footer-state.update(complete_footer.join(" | "))
+  tum-meta.update((
+    title: title,
+    university: university-name.at(lang),
+    location: if location == none { default-location.at(lang) } else { location },
+    date: date.display("[day]. [month repr:long] [year]"),
+    authors: authors.join(", "),
+    school: school,
+    chair: chair,
+    footer: (authors + footer-infos).join(" | "),
+  ))
 
   body
 }
 
 #let title-slide(flags: false) = {
   slide({
+    // Decorative, so no alt text.
     if flags {
-      // TUM Background
-      place(center, 
-        pad(image("/resources/TUM-flags.jpg", width: 100%, height: 100%))
-      )
-      place(top + right,
-        pad(1cm, image("/resources/TUM-logo-white.svg", height: 1cm))
-      )
+      pdf.artifact(place(center, image("resources/TUM-flags.jpg", width: 100%, height: 100%)))
+      pdf.artifact(place(
+        top + right,
+        pad(1cm, image("resources/TUM-logo-white.svg", height: 1cm)),
+      ))
     } else {
-      // TUM Watermark
-      place(right + bottom, 
-        pad(1cm, image("/resources/TUM-turm.jpg", height: 12cm))
-      )
+      pdf.artifact(place(
+        right + bottom,
+        pad(1cm, image("resources/TUM-turm.jpg", height: 12cm)),
+      ))
     }
-    set text(white) if flags
-    // Presentation information
-    context pad(
-      x: 2cm,
-      y: 3cm,
-      {
-        text(title-state.get(), size: 25pt)
-        v(1cm)
-        stack(
-          dir: ttb,
-          spacing: 0.5cm,
-          author-state.get(),
-          university-state.get(),
-          school-state.get(),
-          chair-state.get(),
-          [#location-state.get(), #date-state.get()],
-        )
-      }
-    )
+    set text(fill: white) if flags
+
+    context {
+      let meta = tum-meta.get()
+      // Skip unset school/chair instead of leaving a gap.
+      let lines = (
+        meta.authors,
+        meta.university,
+        meta.school,
+        meta.chair,
+        [#meta.location, #meta.date],
+      ).filter(line => line not in (none, ""))
+
+      pad(x: 2cm, y: 3cm, {
+        heading(level: 1, meta.title)
+        stack(dir: ttb, spacing: 0.5cm, ..lines)
+      })
+    }
   })
 }
 
 #let empty-slide(body) = {
-  // Footer styling
-  let footer = {
+  let footer = context {
     set align(left + bottom)
     set text(size: 11pt)
-    context pad(
-      bottom: 0.4cm,
-      {
-        footer-state.get()
-        h(1fr)
-        toolbox.slide-number
-      }
-    )
+    pad(bottom: 0.4cm, {
+      tum-meta.get().footer
+      h(1fr)
+      toolbox.slide-number
+    })
   }
-  // Page setup
+
   set page(
-    margin: ( top: 3cm, bottom: 1cm, x: 1cm ),
+    margin: (top: 3cm, bottom: 1cm, x: 1cm),
     footer: footer,
   )
 
-  slide({
-    body
-  })
+  slide(body)
 }
 
 #let title-content-slide(title: "Title", body) = {
-  // Reuse empty-slide with predefined layout
   empty-slide({
-    text(title, size: 25pt)
-    v(0.8cm)
+    heading(level: 1, title)
     body
   })
 }
 
-#let title-image-slide(title: "Title", image_path: none) = {
-  // Reuse empty-slide with predefined layout
+// image-path is resolved relative to this file, so use a root-absolute path
+// like "/resources/photo.jpg".
+#let title-image-slide(title: "Title", image-path: none, alt: none) = {
   title-content-slide(title: title, {
-      if image_path != none {
-        align(center, image(image_path))
-      }
+    if image-path != none {
+      align(center, image(image-path, alt: alt))
     }
-  )
+  })
 }

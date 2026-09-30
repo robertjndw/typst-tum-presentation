@@ -19,12 +19,14 @@ Nix and Docker users, please refer to the official installation guide for detail
 
 
 ## Usage
-To use this template for your presentation, you download this repository and copy the files into your presentation directory (except the `example.typ` file). Recommended is to create a dedicated directory named `theme` for copying the files. 
+To use this template for your presentation, you download this repository and copy the files into your presentation directory (except the `example.typ` file). Recommended is to create a dedicated directory named `theme` for copying the files. Keep the `resources` folder next to `theme.typ`.
+
+Needs Typst 0.14+ and the Arial font (or pass `font:` to `tum-theme`).
 
 #### 1. Importing the Template
 You can start creating your presentation by creating a new `.typ` file (e.g. `presentation.typ`) and import the template with the following line:
 ```
-#import "/theme/theme.typ": *
+#import "/theme/theme.typ": later, title-content-slide, title-image-slide, title-slide, tum-theme
 ```
 
 Alternatively, you can use the GitHub template feature to create a new repository with this template. In this case, you can directly start creating your presentation in the `example.typ` file (rename it to `presentation.typ`).
@@ -33,7 +35,7 @@ Alternatively, you can use the GitHub template feature to create a new repositor
 Configure the theme with the metadata of your presentation. This can be done by setting the following variables:
 ```
 #show: tum-theme.with(
-  authors: ("Max Mustermann",), 
+  authors: ("Max Mustermann",),
   title: "My awesome topic i want to put into a presentation",
   footer-infos: ("Excellence",),
   school: "TUM School of Musterverfahren",
@@ -48,15 +50,15 @@ Once the metadata is set, you can start creating your slides. The template provi
 ```
 For a standard title-content slide you can use:
 ```
-#title-content-slide(title: "Section 1")[#text("This is the first section of the presentation.")]
+#title-content-slide(title: "Section 1")[This is the first section of the presentation.]
 ```
 
 #### 4. Adding Dynamic
 You can step-by-step reveal content on slides by using the `#show: later` function. For example, to reveal a list of items one by one, you can use the following code:
 ```
-#text("This is shown first.")
+This is shown first.
 #show: later
-#text("This is hidden first.")
+This is hidden first.
 ```
 
 #### 5. Compiling the Presentation

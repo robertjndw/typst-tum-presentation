@@ -23,32 +23,33 @@ back.
 ## Setting up a presentation
 
 ```typ
-#import "theme.typ": *
+#import "theme.typ": later, title-content-slide, title-image-slide, title-slide, tum-theme
 
 #show: tum-theme.with(
   authors: ("Your Name",),
   title: "Presentation Title",
   footer-infos: ("Optional extra footer text",),
-  school: "TUM School of ...",                     // optional
+  school: "TUM School of ...",                     // optional, line omitted if unset
   chair: "Lehrstuhl für ...",                      // optional
   lang: "en",                                      // or "de"
   date: datetime(year: 2025, month: 6, day: 10),   // optional, defaults to today
 )
 ```
 
-**About the import path.** `theme.typ` loads its logos with root-absolute paths
-(`/resources/TUM-logo.svg`), and Typst resolves those against the *project root*, which
-defaults to the directory of the file you compile. So the import path and the compile
-command have to agree:
+**About the import path.** `theme.typ` loads its own logos relative to itself, so keep
+`resources/` next to it. Image paths you pass to `title-image-slide` (or to `image()` in
+your own slides) are root-absolute, and Typst resolves those against the *project root*,
+which defaults to the directory of the file you compile. So the import path and the
+compile command have to agree:
 
 | Layout | Import | Compile from |
 |---|---|---|
-| Deck next to `theme.typ` (this repo) | `#import "theme.typ": *` | that directory |
-| Theme copied into `theme/`, `resources/` at top level | `#import "/theme/theme.typ": *` | project root |
-| Deck in a subfolder, theme above it | `#import "/theme.typ": *` | `typst compile --root . slides/deck.typ` |
+| Deck next to `theme.typ` (this repo) | `#import "theme.typ": ...` | that directory |
+| Theme copied into `theme/` (with its `resources/`) | `#import "/theme/theme.typ": ...` | project root |
+| Deck in a subfolder, theme above it | `#import "/theme.typ": ...` | `typst compile --root . slides/deck.typ` |
 
 A bare `../theme.typ` fails with *"would escape the project root"* - Typst will not read
-outside the root. Pass `--root` rather than rewriting the theme's paths.
+outside the root. Pass `--root` rather than rewriting paths.
 
 ## Slide types
 
@@ -64,20 +65,20 @@ The workhorse. Takes any content in the body: text, lists, tables, code, images,
 default** - if the user wants TUM blue, do it explicitly:
 
 ```typ
-#title-content-slide(title: text(TUM_primary_blue)[Key Findings])[
+#title-content-slide(title: text(tum-colors.primary-blue)[Key Findings])[
   - Result one
   - Result two
 ]
 ```
 
-### `#title-image-slide(title: "...", image_path: "/resources/foo.jpg")`
+### `#title-image-slide(title: "...", image-path: "/resources/foo.jpg", alt: "...")`
 Convenience wrapper for a single centered image. Two sharp edges worth knowing:
 
 - It takes **no body** and gives you **no control over image size**. The image renders at
   its natural size (pixels ÷ DPI), shrunk to the body width but never to the body height,
   so a tall or low-DPI image overflows onto a second page. When in doubt use a content
   slide with an explicit `height:` (see [Layout recipes](#layout-recipes)).
-- Omitting `image_path` renders a title-only slide, which is a useful placeholder. But a
+- Omitting `image-path` renders a title-only slide, which is a useful placeholder. But a
   path that points at a missing file is a hard error (*"file not found"*), so only write
   the path once the file is actually there.
 
@@ -121,7 +122,7 @@ whatever shape the image is:
 
 ```typ
 #empty-slide[
-  #align(center + horizon, text(size: 40pt, TUM_primary_blue)[40% faster, same accuracy])
+  #align(center + horizon, text(size: 40pt, tum-colors.primary-blue)[40% faster, same accuracy])
 ]
 ```
 
@@ -182,10 +183,10 @@ Fix overflow by lowering the image `height:`, trimming body text, or splitting t
 |---|---|
 | `file not found (searched at .../theme.typ)` | Compiling from the wrong directory. Compile where `theme.typ` lives, or use a root-absolute import plus `--root`. |
 | `path "../theme.typ" would escape the project root` | Typst will not read above the root. Add `--root <project-dir>`. |
-| `expected path, string, or bytes, found none` | An older `theme.typ` whose `title-image-slide` guard reads `if image != none` instead of `if image_path != none`. Pass an `image_path`, or apply that one-word fix. |
+| `expected path, string, or bytes, found none` | An older `theme.typ` whose `title-image-slide` guard reads `if image != none` instead of `if image-path != none`. Pass an `image-path`, or apply that one-word fix. |
 | A slide appears twice, second copy blank or headerless | Content overflow, not a duplicate. Reduce image height or split the slide. |
-| Text renders in a serif fallback; `typst fonts` lacks Arial | The theme sets `font: "Arial"`. On Linux install `ttf-mscorefonts-installer` (this is what `.github/workflows/` does) or change the font in `theme.typ`. |
-| Image missing though the file exists | Image paths are root-absolute (`/resources/...`), not relative to the `.typ` file. |
+| Text renders in a serif fallback; `typst fonts` lacks Arial | The theme defaults to `font: "Arial"`. On Linux install `ttf-mscorefonts-installer` (this is what `.github/workflows/` does) or pass `font:` to `tum-theme`. |
+| Image missing though the file exists | Image paths you pass to slides are root-absolute (`/resources/...`), not relative to the `.typ` file. |
 
 ## Converting a PPTX deck
 
@@ -212,6 +213,7 @@ cannot do is judge meaning, so the draft is a starting point. Work through it an
 - Check the `// REVIEW:` comments; each marks something the script could not place, such
   as a second image on a slide.
 - Confirm the author, title, school, and chair in the `tum-theme` block.
+- Add `alt:` descriptions to images if the PDF should be accessible.
 - Condense the bodies. PowerPoint bullets are usually full sentences and read as walls of
   text at 14pt; the `// note:` comments carry the speaker notes, which often say what the
   slide was actually for.

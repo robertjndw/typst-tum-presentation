@@ -6,7 +6,7 @@
 Extracts titles, bullet text (with nesting), tables, speaker notes and the
 embedded images, then emits Typst using the slide functions from theme.typ.
 Images are written into an assets directory and referenced with root-absolute
-paths (/resources/...), which is what theme.typ's own image references use.
+paths (/resources/...), which is how image-path is resolved.
 
 The output is a *draft*: it is meant to compile as-is so you can iterate on it,
 not to be the finished deck. Read the "REVIEW" comments it leaves behind.
@@ -218,7 +218,7 @@ def convert(pptx_path, assets_dir, typst_prefix, theme_import, include_notes):
     author = props.author or (cover_body[0][1] if cover_body else "Author")
 
     out = [
-        f'#import "{theme_import}": *',
+        f'#import "{theme_import}": later, title-content-slide, title-image-slide, title-slide, tum-theme',
         "",
         "#show: tum-theme.with(",
         f'  authors: ("{typst_string(author)}",),',
@@ -259,7 +259,8 @@ def convert(pptx_path, assets_dir, typst_prefix, theme_import, include_notes):
         extras = [f"  // REVIEW: unplaced image {p}" for p, _ in images[1:]]
 
         if kind == "image" and fits:
-            out += [f"// Slide {index}", f'#title-image-slide({heading}, image_path: "{path}")']
+            out += [f"// Slide {index}", f'#title-image-slide({heading}, image-path: "{path}")']
+            out.append("// REVIEW: add alt: \"...\" to describe the image")
             out += [line.lstrip() for line in extras] + [""]
             continue
 

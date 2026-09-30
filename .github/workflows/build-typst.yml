@@ -14,13 +14,20 @@ jobs:
           sudo apt install -y --no-install-recommends ttf-mscorefonts-installer
           sudo fc-cache -fv
           fc-match Arial
-      
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          fetch-depth: '0'
           lfs: true
-  
+
       - uses: typst-community/setup-typst@v5
+        with:
+          typst-version: 0.15.1
       - run: typst fonts
       - run: typst compile example.typ example.pdf
+
+      - name: Upload example
+        uses: actions/upload-artifact@v4
+        with:
+          name: example
+          path: example.pdf

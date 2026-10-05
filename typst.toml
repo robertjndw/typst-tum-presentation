@@ -4,10 +4,11 @@ version = "0.1.0"
 entrypoint = "theme.typ"
 authors = ["Robert Jandow <robert@jandow.de>"]
 license = "MIT"
-description = "Polylux slides in the TUM corporate design."
+description = "Touying slides in the TUM corporate design."
 repository = "https://github.com/robertjndw/typst-tum-presentation"
 categories = ["presentation"]
-keywords = ["TUM", "slides", "polylux", "university"]
+compiler = "0.15.0"
+keywords = ["TUM", "slides", "touying", "university"]
 exclude = [".agents", ".github", "example.typ"]
 
 [template]

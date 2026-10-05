@@ -1,8 +1,10 @@
 # TUM Typst Presentation Template
 
-This is a Typst polylux template for presentations at the Technical University of Munich (TUM). It is based on the [TUM Corporate Design](https://www.it.tum.de/en/it/faq/media-production-design/corporate-design/where-can-i-find-templates-for-the-tum-corporate-design/).
+This is a Typst template for presentations at the Technical University of Munich (TUM). It is based on the [TUM Corporate Design](https://www.it.tum.de/en/it/faq/media-production-design/corporate-design/where-can-i-find-templates-for-the-tum-corporate-design/).
 
-It utilizes the [Polylux package](https://github.com/andreasKroepelin/polylux) for Typst. For optimal results, it is recommended to take a look into the [Polylux book](https://polylux.dev/book/polylux.html)
+It is built on [Touying](https://touying-typ.github.io/), which handles animations, speaker notes, handouts and article export. Anything not covered here is in the [Touying documentation](https://touying-typ.github.io/docs/intro).
+
+![Slides from the example presentation](https://raw.githubusercontent.com/robertjndw/typst-tum-presentation/main/.github/images/preview.png)
 
 An example presentation is included in the [`example.typ`](./example.typ) file. The latest compiled version of the example presentation can be found in the release section of GitHub.
 
@@ -21,47 +23,65 @@ Nix and Docker users, please refer to the official installation guide for detail
 ## Usage
 To use this template for your presentation, you download this repository and copy the files into your presentation directory (except the `example.typ` file). Recommended is to create a dedicated directory named `theme` for copying the files. Keep the `resources` folder next to `theme.typ`.
 
-Needs Typst 0.14+ and the Arial font (or pass `font:` to `tum-theme`).
+Needs Typst 0.15+ and the Arial font (or pass `font:` to `tum-theme`).
 
 #### 1. Importing the Template
-You can start creating your presentation by creating a new `.typ` file (e.g. `presentation.typ`) and import the template with the following line:
-```
-#import "/theme/theme.typ": later, title-content-slide, title-image-slide, title-slide, tum-theme
+Import the theme. It re-exports all of Touying, so this one import is all you need:
+```typ
+#import "/theme/theme.typ": *
 ```
 
 Alternatively, you can use the GitHub template feature to create a new repository with this template. In this case, you can directly start creating your presentation in the `example.typ` file (rename it to `presentation.typ`).
 
 #### 2. Setting Metadata
-Configure the theme with the metadata of your presentation. This can be done by setting the following variables:
-```
+Configure the theme with the metadata of your presentation:
+```typ
 #show: tum-theme.with(
+  lang: "en", // or "de"
+  title: [My awesome topic I want to put into a presentation],
   authors: ("Max Mustermann",),
-  title: "My awesome topic i want to put into a presentation",
+  school: [TUM School of Musterverfahren],
+  chair: [Lehrstuhl für Mustertechnik],
   footer-infos: ("Excellence",),
-  school: "TUM School of Musterverfahren",
-  chair: "Lehrstuhl für Mustertechnik",
 )
 ```
+`subtitle`, `date` and `location` are optional too. Any Touying `config-*` dictionary can be passed alongside, e.g. `config-common(handout: true)`.
 
 #### 3. Creating Slides
-Once the metadata is set, you can start creating your slides. The template provides a variety of slide types, which can be used by calling the respective function. For example, to create a title slide, you can use the following code:
-```
-#title-slide()
-```
-For a standard title-content slide you can use:
-```
-#title-content-slide(title: "Section 1")[This is the first section of the presentation.]
+Slides are written as a document: every `==` heading starts a slide and every `=` heading a section with its own divider slide.
+```typ
+#title-slide()           // or #title-slide(flags: true)
+#outline-slide()
+
+= Introduction
+
+== Motivation
+This is the first slide of the presentation.
 ```
 
-#### 4. Adding Dynamic
-You can step-by-step reveal content on slides by using the `#show: later` function. For example, to reveal a list of items one by one, you can use the following code:
-```
+The theme also provides:
+
+| Function | Purpose |
+|---|---|
+| `#title-slide(flags: false)` | Opening slide. `flags: true` uses the TUM flags photo. |
+| `#outline-slide()` | Table of contents built from the `=` sections. |
+| `#focus-slide[...]` | Full-bleed TUM blue slide for a key statement. |
+| `#image-slide(image(...))` | Scales an image to fill the space below the title. |
+| `#slide(composer: (1fr, 1fr))[...][...]` | Multi-column layout, placed after a `==` heading. |
+
+#### 4. Adding Dynamics
+Reveal content step by step with `#pause`, or use `#uncover`, `#only` and `#alternatives` for finer control:
+```typ
 This is shown first.
-#show: later
+#pause
 This is hidden first.
 ```
+See the [Touying animation docs](https://touying-typ.github.io/docs/tutorials/dynamic/simple) for more.
 
-#### 5. Compiling the Presentation
+#### 5. Speaker Notes
+Add `#speaker-note[...]` to a slide. To show the notes next to the slides, for example in [pdfpc](https://pdfpc.github.io/) or on a second screen, pass `config-common(show-notes-on-second-screen: right)` to `tum-theme`.
+
+#### 6. Compiling the Presentation
 Once you have created your presentation, you can compile it by running the following standard Typst command in the terminal:
 ```sh
 # Creates `presentation.pdf` in working directory.
@@ -74,10 +94,16 @@ You can also watch source files and automatically recompile on changes. This is 
 typst watch presentation.typ
 ```
 
+The same source can also produce a handout (one page per slide, animations collapsed) or a continuous A4 document:
+```sh
+typst compile presentation.typ handout.pdf --input export-mode=handout
+typst compile presentation.typ article.pdf --input export-mode=article
+```
+
 ---
 ## Further Resources
 
 - [Typst Documentation](https://typst.app/docs/)
-- [Typst Polylux Book](https://polylux.dev/book/polylux.html)
+- [Touying Documentation](https://touying-typ.github.io/)
 - [Typst Guide for LaTeX Users](https://typst.app/docs/guides/guide-for-latex-users/)
-- [Typst VS Code Extension (inofficial)](https://marketplace.visualstudio.com/items?itemName=nvarner.typst-lsp)
+- [Tinymist VS Code Extension](https://marketplace.visualstudio.com/items?itemName=myriad-dreamin.tinymist)

@@ -2,56 +2,76 @@
 
 ## `tum-theme` parameters
 
-| Parameter      | Type              | Default                        | Description |
-|----------------|-------------------|--------------------------------|-------------|
-| `aspect-ratio` | string            | `"16-9"`                       | Slide ratio; becomes Typst's `presentation-<ratio>` paper. |
-| `lang`         | string            | `"en"`                         | `"en"` or `"de"`. Selects the university name and the default location (Munich/München). |
-| `font`         | string or array   | `"Arial"`                     | Font family for all text. |
-| `title`        | string            | `"Title of the TUM presentation"` | Shown on title slides and set as PDF document title. |
-| `location`     | string or none    | `none` → Munich/München        | Event location, shown on the title slide. |
-| `date`         | datetime or auto  | `auto` (today)                 | Rendered as `[day]. [month repr:long] [year]` and set as PDF document date. |
-| `authors`      | array of strings  | `()`                           | Joined with `, ` on the title slide, and prepended to the footer. |
-| `school`       | string or none    | `none`                         | Title slide only; the line is omitted if unset. |
-| `chair`        | string or none    | `none`                         | Title slide only; the line is omitted if unset. |
-| `footer-infos` | array of strings  | `()`                           | Appended after `authors`; the whole list is joined with ` \| `. |
+| Parameter      | Type                 | Default                            | Description |
+|----------------|----------------------|------------------------------------|-------------|
+| `aspect-ratio` | string               | `"16-9"`                           | `"16-9"` or `"4-3"`. |
+| `lang`         | string               | `"en"`                             | `"en"` or `"de"`. Localizes the university name, the default location, the date and the outline title. |
+| `font`         | string or array      | `"Arial"`                          | Font family for all text, also used in article mode. |
+| `title`        | content              | `[Title of the TUM presentation]`  | Shown on the title slide and set as PDF document title. |
+| `subtitle`     | content or none      | `none`                             | Shown below the title on the title slide. |
+| `authors`      | string or array      | `()`                               | Joined with `, ` on the title slide, prepended to the footer, and set as PDF author. |
+| `date`         | datetime, content or auto | `auto` (today)                | Rendered as `05. October 2026` / `05. Oktober 2026` and set as PDF document date. |
+| `school`       | content or none      | `none`                             | Title slide only; the line is omitted if unset. |
+| `chair`        | content or none      | `none`                             | Title slide only; the line is omitted if unset. |
+| `location`     | content or auto      | `auto` → Munich/München            | Shown on the title slide before the date. |
+| `footer-infos` | array                | `()`                               | Appended after `authors`; the whole list is joined with ` \| `. |
+| positional     | `config-*` dicts     |                                    | Passed through to Touying, e.g. `config-common(handout: true)`. |
 
-Note `authors` must be a Typst array - a single author needs the trailing comma:
-`authors: ("Max Mustermann",)`.
+A single author still works as a plain string, but `footer-infos` must be an array: one
+entry needs the trailing comma, `("Excellence",)`.
+
+Useful pass-through configs:
+
+- `config-common(show-notes-on-second-screen: right)` - speaker-note panel beside every slide.
+- `config-common(handout: true)` - same as `--input export-mode=handout`.
+- `config-methods(cover: utils.alpha-changing-cover)` - show not-yet-revealed content greyed out instead of hidden.
 
 ## Slide functions
 
-| Function | Body? | Notes |
-|---|---|---|
-| `title-slide(flags: false)` | no | `flags: true` swaps the tower watermark for the full-bleed flags photo and white text. |
-| `title-content-slide(title: "Title", body)` | yes | `title` accepts content, so `text(tum-colors.primary-blue)[...]` works. Renders black by default. The title is a level 1 heading. |
-| `title-image-slide(title: "Title", image-path: none, alt: none)` | no | Centers `image(image-path, alt: alt)` with no size control. `image-path` must be root-absolute. Omitting it gives a title-only slide. A path to a missing file is a hard error. `alt` describes the image in accessible PDFs. |
-| `empty-slide(body)` | yes | Footer and slide number only. The other two build on this. |
+| Function | Notes |
+|---|---|
+| `== Title` | A content slide. The usual way to make one. |
+| `= Section` | A section divider slide, plus outline and bookmark entry. |
+| `title-slide(flags: false, ..fields)` | `flags: true` swaps the tower watermark for the full-bleed flags photo and white text. Named arguments override metadata fields for this slide. Not numbered. |
+| `outline-slide(title: ..)` | Lists the `=` sections. Title localized ("Outline"/"Inhalte") unless given. |
+| `focus-slide[body]` | TUM blue background, 32pt white text. Not numbered. |
+| `image-slide(body)` | Scales `body` to fill the space below the title. Place after a `==` heading. |
+| `slide(composer: ..)[..][..]` | The underlying content slide. Use after a `==` heading for multi-column layouts: `composer: (1fr, 2fr)` or `composer: 2`. |
+| `new-section-slide` | What `=` calls. Rarely called directly. |
+
+Everything from Touying is re-exported: `pause`, `meanwhile`, `uncover`, `only`,
+`alternatives`, `item-by-item`, `speaker-note`, `article-text`, `article-only`, `utils`,
+`components`, `config-*`.
 
 ## Page geometry
 
-Measured on the default `16-9` paper (33.87 × 19.05 cm) with the theme's margins
-(top 3 cm, bottom 1 cm, x 1 cm):
+Measured on the default `16-9` page (29.7 × 16.7 cm), margins top 4.4 cm, bottom 1.5 cm,
+x 1 cm:
 
 | Quantity | Value |
 |---|---|
-| Body width | ~31.9 cm |
-| Body height below the title | ~10.5 cm |
-| Safe image height, image alone | `10cm` |
+| Body width | ~27.7 cm |
+| Body height below the title | ~10.8 cm |
+| Safe image height, image alone | `10cm` (or use `image-slide`) |
 | Safe image height with a caption below | `9cm` |
-| Title size | 25 pt (both title slide and content slides) |
+| Title size | 25 pt |
+| Section title size | 32 pt |
 | Base text size | 14 pt, font Arial |
 
 Percentage heights (`height: 70%`) do not constrain anything useful - the body block has
-automatic height. Use absolute units. Content exceeding the body height reflows onto a
-second page with no warning.
+automatic height. Use absolute units. Content exceeding the body height continues on an
+extra page with the same title and no warning, unless `config-common(breakable: false)` is
+set, which keeps it on one page and warns instead.
 
 ## Colors (`colors.typ`)
 
-All colors are in the `tum-colors` dictionary (defined in `colors.typ`, exported by `theme.typ`), e.g. `tum-colors.primary-blue`.
+All colors are in the `tum-colors` dictionary (defined in `colors.typ`, exported by
+`theme.typ`), e.g. `tum-colors.primary-blue`. The theme also maps them to Touying's color
+slots: `primary` is TUM blue, `secondary` the secondary blue, `tertiary` the dark blue.
 
 | Variable                  | Hex value  | Usage |
 |---------------------------|------------|-------|
-| `tum-colors.primary-blue`         | `#0065BD`  | Primary brand color - headings, accents |
+| `tum-colors.primary-blue`         | `#0065BD`  | Primary brand color - headings, accents, strong text, focus slides |
 | `tum-colors.primary-white`        | `#ffffff`  | Backgrounds |
 | `tum-colors.primary-black`        | `#000000`  | Body text |
 | `tum-colors.secondary-blue`       | `#005293`  | Darker blue for contrast |
@@ -71,15 +91,7 @@ All colors are in the `tum-colors` dictionary (defined in `colors.typ`, exported
 `resources/TUM-flags.jpg`. The theme references them relative to `theme.typ`, so keep the
 `resources/` folder next to it.
 
-## Polylux
+## Touying
 
-Template pins `@preview/polylux:0.4.0`.
-
-- `#show: later` - everything after this point appears on the next step; one extra PDF
-  page per `later`.
-- `toolbox.slide-number` - used by the theme's footer.
-
-`theme.typ` re-exports `later`.
-
-Further primitives (`uncover`, `only`, `pause`) in the
-[Polylux book](https://polylux.dev/book/polylux.html).
+The theme pins `@preview/touying:0.8.0`, which needs Typst 0.15+. Full documentation at
+[touying-typ.github.io](https://touying-typ.github.io/).

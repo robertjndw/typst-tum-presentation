@@ -1,30 +1,39 @@
-#import "/theme.typ": later, title-content-slide, title-image-slide, title-slide, tum-theme
+#import "/theme.typ": *
 
 #show: tum-theme.with(
+  title: [My awesome topic I want to put into a presentation],
   authors: ("Max Mustermann",),
-  title: "My awesome topic I want to put into a presentation",
-  school: "TUM School of Musterverfahren",
-  chair: "Lehrstuhl für Mustertechnik",
+  school: [TUM School of Musterverfahren],
+  chair: [Lehrstuhl für Mustertechnik],
   footer-infos: ("Excellence",),
 )
 
 #title-slide()
 
-#title-slide(flags: true)
+#outline-slide()
 
-#title-content-slide(title: "Section 1")[
-  This is the first section of the presentation.
+= Introduction
 
-  #show: later
-  It is a very important section.
+== Motivation
 
-  #show: later
-  It is the best section.
-]
+This is the first slide of the presentation.
 
-#title-content-slide(title: "Section 2")[
-  #lorem(100)
-]
+#pause
+It is a very important slide.
 
-// Image slides need a root-absolute path, e.g.:
-// #title-image-slide(title: "Section 4", image-path: "/images/photo.jpg", alt: "Description")
+#pause
+It is the best slide.
+
+#speaker-note[Notes for this slide go here.]
+
+= Main Part
+
+== Details
+
+#lorem(60)
+
+#focus-slide[Thank you!]
+
+// Image slides scale the image to fit below the title:
+// == Photo
+// #image-slide(image("/images/photo.jpg", alt: "Description"))

@@ -4,9 +4,9 @@
     python3 pptx_to_typst.py deck.pptx -o draft.typ
 
 Extracts titles, bullet text (with nesting), tables, speaker notes and the
-embedded images, then emits Typst using the slide functions from theme.typ.
+embedded images, then emits heading-based Touying markup for theme.typ.
 Images are written into an assets directory and referenced with root-absolute
-paths (/resources/...), which is how image-path is resolved.
+paths (/resources/...), which Typst resolves against the project root.
 
 The output is a *draft*: it is meant to compile as-is so you can iterate on it,
 not to be the finished deck. Read the "REVIEW" comments it leaves behind.
@@ -21,12 +21,9 @@ from pathlib import Path
 # `[` and `]` matter because body text is emitted inside a `[...]` content block.
 _MARKUP_SPECIALS = "\\#$*_`<>@~[]"
 
-# Geometry of a 16:9 slide body, measured against theme.typ's page margins
-# (top 3cm / bottom 1cm / x 1cm on a 33.87 x 19.05cm page) minus the title block.
-# An image taller than this silently spills onto a second page, which reads as a
-# duplicated slide in the PDF, so we size images against it instead of guessing.
-BODY_WIDTH_CM = 31.87
-BODY_HEIGHT_CM = 10.5
+# Body of a 16:9 content slide below the title is about 27.7 x 10.8cm. An image
+# taller than that spills onto a second page, which reads as a duplicated slide
+# in the PDF, so sized images stay under it.
 SAFE_IMAGE_HEIGHT = "10cm"  # fits on its own
 SAFE_CAPTION_HEIGHT = "9cm"  # leaves room for a line or two of text below
 
@@ -121,28 +118,8 @@ def split_title_and_body(slide):
     return title, body
 
 
-def _fits_unsized(image):
-    """Would `image(path)` with no width/height stay inside one slide body?
-
-    Typst lays an image out at its natural size (pixels / DPI), shrinking it to
-    the body width if it is wider. Height is never constrained, so a tall or
-    low-DPI image overflows. `title-image-slide` gives no way to size the image,
-    so we predict the result here and fall back to a sized content slide.
-    """
-    try:
-        px_w, px_h = image.size
-        dpi_x = image.dpi[0] or 72
-    except (AttributeError, TypeError, IndexError, ValueError):
-        return False  # unknown: assume the worst and size it explicitly
-    if not px_w or not px_h:
-        return False
-    natural_w = px_w / dpi_x * 2.54
-    rendered_w = min(natural_w, BODY_WIDTH_CM)
-    return rendered_w * (px_h / px_w) <= BODY_HEIGHT_CM
-
-
 def extract_images(slide, index, assets_dir, typst_prefix):
-    """Save the slide's pictures; return [(typst_path, fits_unsized)] largest first."""
+    """Save the slide's pictures; return their Typst paths, largest first."""
     pictures = [s for s in _walk(slide.shapes) if s.shape_type == 13]  # PICTURE
     pictures.sort(key=_area, reverse=True)
 
@@ -156,7 +133,7 @@ def extract_images(slide, index, assets_dir, typst_prefix):
         assets_dir.mkdir(parents=True, exist_ok=True)
         name = f"slide{index:02d}-img{n}.{ext}"
         (assets_dir / name).write_bytes(blob)
-        saved.append((f"{typst_prefix}/{name}", _fits_unsized(picture)))
+        saved.append(f"{typst_prefix}/{name}")
     return saved
 
 
@@ -191,7 +168,7 @@ def render_table(rows):
 
 
 def classify(index, body, images, tables):
-    """Pick the TUM slide function that fits this slide's content."""
+    """Pick the TUM slide layout that fits this slide's content."""
     if index == 1:
         return "cover"
     if not body and not images and not tables:
@@ -218,14 +195,13 @@ def convert(pptx_path, assets_dir, typst_prefix, theme_import, include_notes):
     author = props.author or (cover_body[0][1] if cover_body else "Author")
 
     out = [
-        f'#import "{theme_import}": later, title-content-slide, title-image-slide, title-slide, tum-theme',
+        f'#import "{theme_import}": *',
         "",
         "#show: tum-theme.with(",
+        f"  title: [{typst_markup(title)}],",
         f'  authors: ("{typst_string(author)}",),',
-        f'  title: "{typst_string(title)}",',
-        "  footer-infos: (),",
-        '  // school: "TUM School of ...",',
-        '  // chair: "Lehrstuhl für ...",',
+        "  // school: [TUM School of ...],",
+        "  // chair: [Lehrstuhl für ...],",
         ")",
         "",
         "#title-slide()",
@@ -249,51 +225,51 @@ def convert(pptx_path, assets_dir, typst_prefix, theme_import, include_notes):
         if kind == "cover":
             continue
 
-        heading = f'title: "{typst_string(slide_title)}"' if slide_title else 'title: ""'
+        heading = typst_markup(slide_title) if slide_title else "Untitled"
 
         if kind == "divider":
-            out += [f"// Slide {index} - section divider", f"#title-content-slide({heading})[]", ""]
-            continue
-
-        path, fits = images[0] if images else (None, False)
-        extras = [f"  // REVIEW: unplaced image {p}" for p, _ in images[1:]]
-
-        if kind == "image" and fits:
-            out += [f"// Slide {index}", f'#title-image-slide({heading}, image-path: "{path}")']
-            out.append("// REVIEW: add alt: \"...\" to describe the image")
-            out += [line.lstrip() for line in extras] + [""]
+            # A title-only PowerPoint slide is almost always a section break.
+            out += [f"// Slide {index}", f"= {heading}", ""]
             continue
 
         out.append(f"// Slide {index}")
-        out.append(f"#title-content-slide({heading})[")
+        if not slide_title:
+            out.append("// REVIEW: the PPTX slide had no title")
+        out.append(f"== {heading}")
+        out.append("")
+
+        path = images[0] if images else None
+        extras = [f"// REVIEW: unplaced image {p}" for p in images[1:]]
 
         if kind == "image":
-            # Too tall for title-image-slide, which cannot size its image.
-            out.append(f'  #align(center, image("{path}", height: {SAFE_IMAGE_HEIGHT}))')
+            # image-slide scales the image to the space below the title.
+            out.append(f'#image-slide(image("{path}"))')
+            out.append('// REVIEW: add alt: "..." to describe the image')
             out += extras
         elif kind == "image-caption":
-            out.append(f'  #align(center, image("{path}", height: {SAFE_CAPTION_HEIGHT}))')
-            out += render_body(body) + extras
+            out.append(f'#align(center, image("{path}", height: {SAFE_CAPTION_HEIGHT}))')
+            out += render_body(body, indent="") + extras
         elif kind == "image-text":
-            out.append("  #grid(columns: (1fr, 1fr), gutter: 1cm, align: horizon,")
-            out.append("    [")
-            out += render_body(body, indent="      ")
-            out.append("    ],")
-            out.append(f'    image("{path}", width: 100%, height: {SAFE_IMAGE_HEIGHT}, fit: "contain"),')
-            out.append("  )")
+            out.append("#slide(composer: (1fr, 1fr))[")
+            out += render_body(body)
+            out.append("][")
+            out.append(f'  #image("{path}", width: 100%, height: {SAFE_IMAGE_HEIGHT}, fit: "contain")')
+            out.append("]")
             out += extras
         else:
-            out += render_body(body)
+            out += render_body(body, indent="")
             for rows in tables:
-                out += render_table(rows)
-            out += [f"  // REVIEW: unplaced image {p}" for p, _ in images]
-
-        out.append("]")
+                out += [line[2:] for line in render_table(rows)]
+            out += [f"// REVIEW: unplaced image {p}" for p in images]
 
         if include_notes and slide.has_notes_slide:
             note = slide.notes_slide.notes_text_frame.text.strip()
-            if note:
-                out += [f"// note: {line}" for line in note.splitlines() if line.strip()]
+            lines = [typst_markup(line.strip()) for line in note.splitlines() if line.strip()]
+            if lines:
+                out.append("")
+                out.append("#speaker-note[")
+                out += [f"  {line}" for line in lines]
+                out.append("]")
         out.append("")
 
     return "\n".join(out), summary
